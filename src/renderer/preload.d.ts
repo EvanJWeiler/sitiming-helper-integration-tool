@@ -1,9 +1,8 @@
-import { ElectronHandler } from '../main/preload';
+import { API } from 'main/preload';
 
 declare global {
-  // eslint-disable-next-line no-unused-vars
   interface Window {
-    electron: ElectronHandler;
+    api: typeof API;
   }
 }
 
