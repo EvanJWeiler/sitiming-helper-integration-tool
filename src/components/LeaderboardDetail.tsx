@@ -5,7 +5,6 @@ import { Results } from 'interfaces/Schema';
 import { LeaderboardColumns } from 'interfaces/ColumnDefinitions';
 
 interface LeaderboardDetailProps {
-  categoryId: string;
   racerList: Racer[];
   resultsMap: Results;
   numStages: number;
@@ -98,7 +97,6 @@ const generateLeaderboardColumns = (
 };
 
 function LeaderboardDetail({
-  categoryId,
   racerList,
   resultsMap,
   numStages,
@@ -120,9 +118,7 @@ function LeaderboardDetail({
           pagination: { paginationModel: { pageSize: 15 } },
         }}
         pageSizeOptions={[15, 25, 50]}
-        rows={racerList.filter(
-          (racer) => racer.categoryId && racer.categoryId.includes(categoryId),
-        )}
+        rows={racerList}
         columns={generateLeaderboardColumns(resultsMap, numStages)}
       />
     </div>

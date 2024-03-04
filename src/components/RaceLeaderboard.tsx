@@ -26,6 +26,7 @@ function RaceLeaderboard({
           <Accordion
             disableGutters
             square
+            slotProps={{ transition: { unmountOnExit: true } }}
             disabled={
               raceInfoState.racerList.filter((racer) => racer.categoryId === id)
                 .length === 0
@@ -35,15 +36,17 @@ function RaceLeaderboard({
               <Typography>{name}</Typography>
             </AccordionSummary>
             <AccordionDetails>
+              {/* TODO: API call to endpoint instead of passing filtered racerList */}
               <LeaderboardDetail
-                racerList={raceInfoState.racerList}
-                categoryId={id}
+                racerList={raceInfoState.racerList.filter(
+                  (racer) => racer.categoryId && racer.categoryId.includes(id),
+                )}
                 resultsMap={resultsState.results}
                 numStages={7}
               />
             </AccordionDetails>
           </Accordion>
-          <Divider light />
+          <Divider />
         </div>
       ))}
     </div>

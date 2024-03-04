@@ -3,13 +3,11 @@ import { Racer } from 'interfaces/Database';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 
 interface CategoryDetailProps {
-  categoryId: string;
   racerList: Racer[];
   columnDefinition: GridColDef[];
 }
 
 function CategoryDetail({
-  categoryId,
   racerList,
   columnDefinition,
 }: CategoryDetailProps): React.JSX.Element {
@@ -23,11 +21,12 @@ function CategoryDetail({
         density="compact"
         disableRowSelectionOnClick
         autoHeight
-        rows={racerList.filter(
-          (racer) => racer.categoryId && racer.categoryId.includes(categoryId),
-        )}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 15 } },
+        }}
+        pageSizeOptions={[15, 25, 50]}
+        rows={racerList}
         columns={columnDefinition}
-        pageSizeOptions={[15]}
       />
     </div>
   );

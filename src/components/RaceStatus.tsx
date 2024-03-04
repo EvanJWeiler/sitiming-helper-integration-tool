@@ -82,7 +82,6 @@ function RaceStatus({
   }
 
   // TODO: emergency contact info getter?
-  // TODO: do not reload page every time route is loaded
   return (
     <div>
       {raceInfoState.categoryList.length !== 0 && (
@@ -109,18 +108,18 @@ function RaceStatus({
             </AccordionSummary>
             <AccordionDetails>
               <CategoryDetail
-                categoryId=""
                 racerList={raceInfoState.racerList}
                 columnDefinition={RaceStatusColumns}
               />
             </AccordionDetails>
           </Accordion>
-          <Divider light />
+          <Divider />
           {raceInfoState.categoryList.map(({ id, name }) => (
             <div key={id}>
               <Accordion
                 disableGutters
                 square
+                slotProps={{ transition: { unmountOnExit: true } }}
                 disabled={
                   raceInfoState.racerList.filter(
                     (racer) => racer.categoryId === id,
@@ -140,14 +139,17 @@ function RaceStatus({
                   />
                 </AccordionSummary>
                 <AccordionDetails>
+                  {/* TODO: API call to endpoint instead of passing filtered racerList */}
                   <CategoryDetail
-                    categoryId={id}
-                    racerList={raceInfoState.racerList}
+                    racerList={raceInfoState.racerList.filter(
+                      (racer) =>
+                        racer.categoryId && racer.categoryId.includes(id),
+                    )}
                     columnDefinition={CategoryStatusColumns}
                   />
                 </AccordionDetails>
               </Accordion>
-              <Divider light />
+              <Divider />
             </div>
           ))}
         </List>
