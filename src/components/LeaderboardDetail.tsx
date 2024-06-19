@@ -1,11 +1,11 @@
 import React from 'react';
-import { Racer } from 'interfaces/Database';
+import { RacerStatus } from 'interfaces/Database';
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
 import { Results } from 'interfaces/Schema';
 import { LeaderboardColumns } from 'interfaces/ColumnDefinitions';
 
 interface LeaderboardDetailProps {
-  racerList: Racer[];
+  racerList: RacerStatus[];
   resultsMap: Results;
   numStages: number;
 }
@@ -64,7 +64,7 @@ const generateLeaderboardColumns = (
       const { cardNumber } = params.row;
       const racerResult = resultsMap[cardNumber];
 
-      if (!racerResult) return '';
+      if (!racerResult) return 'n/a';
 
       if (racerResult.find((result) => result.stageTime === -1)) return 'DNF';
 

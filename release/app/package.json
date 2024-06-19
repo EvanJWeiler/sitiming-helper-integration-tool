@@ -1,12 +1,12 @@
 {
-  "name": "sitiming-helper-integration-tool",
-  "version": "0.2.0",
-  "description": "Desktop helper tool for monitoring SiTiming based events",
+  "name": "sitiming-operations-konsole-for-enduro",
+  "version": "0.3.0",
+  "description": "Dashboard for monitoring the status of SiTiming-based enduro events",
   "license": "MIT",
   "author": {
     "name": "Evan Weiler",
     "email": "evanjweiler@gmail.com",
-    "url": "https://github.com/EvanJWeiler/sitiming_helper_integration_tool"
+    "url": "https://github.com/EvanJWeiler/sitiming-operations-konsole-for-enduro"
   },
   "main": "./dist/main/main.js",
   "scripts": {

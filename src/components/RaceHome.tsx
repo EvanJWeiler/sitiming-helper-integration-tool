@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Refresh } from '@mui/icons-material';
 import {
   Tab,
@@ -10,145 +10,62 @@ import {
   MenuItem,
 } from '@mui/material';
 import { LoadingButton, TabContext, TabList, TabPanel } from '@mui/lab';
-import { RaceInfoState, ListState, ResultState } from 'interfaces/State';
-import { Racer, Category } from 'interfaces/Database';
+import { ListState } from 'interfaces/State';
+import axios from 'config/AxiosConfig';
 import {
   getListStateFromStorage,
-  getRaceInfoStateFromStorage,
-  getResultStateFromStorage,
+  getTabStateFromStorage,
   setListStateInStorage,
-  setRaceInfoStateInStorage,
-  setResultStateInStorage,
+  setTabStateInStorage,
 } from 'services/LocalStorageService';
-import getStageTimesByCardNumber from 'services/LeaderboardService';
 import RaceStatus from './RaceStatus';
 import RaceLeaderboard from './RaceLeaderboard';
 
 function RaceHome(): React.JSX.Element {
-  const [tabValue, setTabValue] = React.useState('status');
-
+  const [tabState, setTabState] = useState(getTabStateFromStorage());
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [listState, setListState] = useState<ListState>(
+    getListStateFromStorage(),
+  );
 
-  const [raceInfoState, setRaceInfoState] = useState<RaceInfoState>({
-    categoryList: [],
-    racerList: [],
-  });
+  const getRaceList = () => {
+    axios
+      .get('/races')
+      .then((res) => {
+        setListState({ ...listState, raceList: res.data });
+        setIsRefreshing(false);
+        return res;
+      })
+      .catch((err) => {
+        throw err;
+      });
+  };
 
-  const [listState, setListState] = useState<ListState>({
-    raceList: [],
-    selectedRace: '',
-  });
+  function handleRaceSelect(event: SelectChangeEvent) {
+    const selectedRace = event.target.value;
 
-  const [resultState, setResultState] = useState<ResultState>({
-    results: {},
-  });
+    setListState({ ...listState, selectedRace });
+  }
 
-  // on component mount
-  useEffect(() => {
-    const raceInfoStateJson = getRaceInfoStateFromStorage();
-    const listStateJson = getListStateFromStorage();
-    const resultStateJson = getResultStateFromStorage();
+  function handleRefresh() {
+    setIsRefreshing(true);
 
-    setRaceInfoState(raceInfoStateJson);
-    setListState(listStateJson);
-    setResultState(resultStateJson);
+    // refresh by setting list state to empty list and dummy uuid, then re-fetch
+    setListState({
+      raceList: [],
+      selectedRace: 'c5f410d8-c549-4c79-a56e-702943b73f02',
+    });
 
-    if (listStateJson.selectedRace !== '') {
-      getStageTimesByCardNumber(listStateJson.selectedRace)
-        .then((res) => {
-          return setResultState({ results: res });
-        })
-        .catch((err) => {
-          throw err;
-        });
-    }
-  }, []);
-
-  // whenever race state is updated
-  useEffect(() => {
-    setRaceInfoStateInStorage(raceInfoState);
-  }, [raceInfoState]);
+    getRaceList();
+  }
 
   useEffect(() => {
     setListStateInStorage(listState);
   }, [listState]);
 
   useEffect(() => {
-    setResultStateInStorage(resultState);
-  }, [resultState]);
-
-  function generateCatList(raceId: string) {
-    const promises = [
-      fetch(`http://localhost:8085/api/categories?raceId=${raceId}`).then(
-        (res) => res.json(),
-      ),
-      fetch(`http://localhost:8085/api/racers?raceId=${raceId}`).then((res) =>
-        res.json(),
-      ),
-    ];
-
-    Promise.all(promises)
-      .then((data) => {
-        const categoryList = (data[0] as Category[]).sort((a, b) => {
-          if (a.numRacers === 0 && b.numRacers === 0) return 0;
-          if (a.numRacers === 0) return 1;
-          if (b.numRacers === 0) return -1;
-
-          return 0;
-        });
-
-        const newState = {
-          categoryList,
-          racerList: data[1] as Racer[],
-        };
-
-        return setRaceInfoState(newState);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }
-
-  function getRaces() {
-    fetch(`http://localhost:8085/api/races`)
-      .then((res) => res.json())
-      .then((res) => {
-        setIsRefreshing(false);
-        setListState({ ...listState, raceList: res });
-
-        return res;
-      })
-      .catch((err) => {
-        throw err;
-      });
-  }
-
-  function handleRaceSelect(event: SelectChangeEvent) {
-    const selectedRace = event.target.value;
-
-    setListState({ ...listState, selectedRace });
-
-    getStageTimesByCardNumber(selectedRace)
-      .then((times) => {
-        return setResultState({ results: times });
-      })
-      .catch((err) => {
-        throw err;
-      });
-
-    generateCatList(selectedRace);
-  }
-
-  function handleRefresh() {
-    const { selectedRace } = listState;
-
-    setIsRefreshing(true);
-    getRaces();
-
-    if (selectedRace !== '') {
-      generateCatList(selectedRace);
-    }
-  }
+    setTabStateInStorage(tabState);
+  }, [tabState]);
 
   return (
     <div>
@@ -166,7 +83,7 @@ function RaceHome(): React.JSX.Element {
               handleRaceSelect(e);
             }}
             onOpen={() => {
-              getRaces();
+              getRaceList();
             }}
             labelId="raceInputLabel"
             label="Select Race"
@@ -197,11 +114,11 @@ function RaceHome(): React.JSX.Element {
           Refresh
         </LoadingButton>
       </Box>
-      <TabContext value={tabValue}>
+      <TabContext value={tabState}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList
             onChange={(event, newValue) => {
-              setTabValue(newValue);
+              setTabState(newValue);
             }}
           >
             <Tab label="Status" value="status" />
@@ -209,13 +126,10 @@ function RaceHome(): React.JSX.Element {
           </TabList>
         </Box>
         <TabPanel value="status">
-          <RaceStatus raceInfoState={raceInfoState} listState={listState} />
+          <RaceStatus raceId={listState.selectedRace} />
         </TabPanel>
         <TabPanel value="leaderboard">
-          <RaceLeaderboard
-            raceInfoState={raceInfoState}
-            resultsState={resultState}
-          />
+          <RaceLeaderboard raceId={listState.selectedRace} />
         </TabPanel>
       </TabContext>
     </div>

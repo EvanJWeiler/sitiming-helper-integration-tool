@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { Alert, Paper, Snackbar, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { Save } from '@mui/icons-material';
-import { SettingsState } from 'interfaces/State';
+import { SettingsState, SnackbarState } from 'interfaces/State';
+import axios from 'config/AxiosConfig';
 
 function Settings(): React.JSX.Element {
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-
+  const [snackbarState, setSnackbarState] = useState<SnackbarState>({
+    isOpen: false,
+    severity: 'success',
+    message: '',
+  });
   const [settingsState, setSettingsState] = useState<SettingsState>({
     settings: window.api.settingsAPI.getSettings(),
     isSubmitting: false,
@@ -16,14 +20,47 @@ function Settings(): React.JSX.Element {
     event.preventDefault();
 
     setSettingsState({ ...settingsState, isSubmitting: true });
-    // TODO: better storing of server credentials
+    // TODO: better storing of server credentials?
 
     window.api.settingsAPI.saveSettings(settingsState.settings);
 
-    setSettingsState({ ...settingsState, isSubmitting: false });
-
-    // TODO: validation logic here (set snackbar accordingly)
-    setSnackbarOpen(true);
+    axios
+      .post(`/settings/database`, {
+        url: settingsState.settings.address,
+        port: settingsState.settings.port,
+        name: settingsState.settings.database,
+        username: settingsState.settings.username,
+        password: settingsState.settings.password,
+      })
+      .then((res) => {
+        setSettingsState({ ...settingsState, isSubmitting: false });
+        setSnackbarState({
+          isOpen: true,
+          severity: 'success',
+          message: 'Database settings successfully updated!',
+        });
+        return res;
+      })
+      .catch((err) => {
+        let errorMessage = '';
+        switch (err.code) {
+          case 'ERR_BAD_REQUEST':
+            errorMessage = 'Unable to connect to SiTiming database';
+            break;
+          case 'ERR_NETWORK':
+            errorMessage = 'Backend server failed unexpectedly, please restart';
+            break;
+          default:
+            errorMessage = 'Unknown error occurred';
+            break;
+        }
+        setSettingsState({ ...settingsState, isSubmitting: false });
+        setSnackbarState({
+          isOpen: true,
+          severity: 'error',
+          message: errorMessage,
+        });
+      });
   }
 
   return (
@@ -130,11 +167,13 @@ function Settings(): React.JSX.Element {
         </Paper>
       </form>
       <Snackbar
-        open={snackbarOpen}
-        onClose={() => setSnackbarOpen(false)}
+        open={snackbarState.isOpen}
+        onClose={() => setSnackbarState({ ...snackbarState, isOpen: false })}
         autoHideDuration={5000}
       >
-        <Alert severity="success">Settings Saved!</Alert>
+        <Alert variant="filled" severity={snackbarState.severity}>
+          {snackbarState.message}
+        </Alert>
       </Snackbar>
     </div>
   );

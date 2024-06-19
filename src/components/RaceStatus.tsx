@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExpandMoreSharp } from '@mui/icons-material';
 import {
   Accordion,
@@ -10,95 +10,98 @@ import {
   Box,
   Chip,
 } from '@mui/material';
-import { ListState, RaceInfoState } from 'interfaces/State';
-import {
-  CategoryStatusColumns,
-  RaceStatusColumns,
-} from 'interfaces/ColumnDefinitions';
-import CategoryDetail from './CategoryDetail';
+import { RaceStatusColumns } from 'interfaces/ColumnDefinitions';
+import { validate as uuidValidate } from 'uuid';
+import { CategoryWithStatus, RaceInfo, RacerStatus } from 'interfaces/Database';
+import { getCategoryStatus, getCategoryStatusString } from 'util/StatusUtil';
+import { DataGrid } from '@mui/x-data-grid';
+import axios from 'config/AxiosConfig';
+import CategoryStatus from './CategoryStatus';
 
 interface RaceStatusProps {
-  raceInfoState: RaceInfoState;
-  listState: ListState;
+  raceId: string;
 }
 
-function RaceStatus({
-  raceInfoState,
-  listState,
-}: RaceStatusProps): React.JSX.Element {
-  function getCategoryStatus(categoryId: string) {
-    const baseStyle = {
-      height: '25px',
-      width: '25px',
-      borderRadius: '25%',
-      marginRight: '10px',
+function RaceStatus({ raceId }: RaceStatusProps): React.JSX.Element {
+  const [racerList, setRacerList] = useState<Array<RacerStatus>>([]);
+  const [categoryList, setCategoryList] = useState<Array<CategoryWithStatus>>(
+    [],
+  );
+  const [raceInfo, setRaceInfo] = useState<RaceInfo>({
+    id: '',
+    name: '',
+    totalRacers: 0,
+    racersOnCourse: 0,
+  });
+
+  useEffect(() => {
+    const getRacerList = () => {
+      axios
+        .get(`/racers/status?raceId=${raceId}`)
+        .then((res) => {
+          setRacerList(res.data);
+          return res;
+        })
+        .catch((err) => {
+          throw err;
+        });
     };
 
-    const racersInCat = raceInfoState.racerList.filter(
-      (racer) => racer.categoryId && racer.categoryId.includes(categoryId),
-    ).length;
+    const getCategoryList = () => {
+      axios
+        .get(`/categories/status?raceId=${raceId}`)
+        .then((res) => {
+          setCategoryList(res.data);
+          return res;
+        })
+        .catch((err) => {
+          throw err;
+        });
+    };
 
-    const racersCheckedIn = raceInfoState.racerList.filter(
-      (racer) =>
-        racer.categoryId &&
-        racer.categoryId.includes(categoryId) &&
-        racer.checkedIn,
-    ).length;
+    const getRaceInfo = () => {
+      axios
+        .get(`/races/info?raceId=${raceId}`)
+        .then((res) => {
+          setRaceInfo(res.data);
+          return res;
+        })
+        .catch((err) => {
+          throw err;
+        });
+    };
 
-    if (racersInCat === 0) {
-      return { ...baseStyle, backgroundColor: 'rgb(150, 150, 150)' };
+    if (uuidValidate(raceId)) {
+      getRacerList();
+      getCategoryList();
+      getRaceInfo();
     }
+  }, [raceId]);
 
-    if (racersCheckedIn === racersInCat) {
-      return { ...baseStyle, backgroundColor: 'rgb(0, 200, 0)' };
-    }
-
-    if (racersCheckedIn === 0 && racersInCat > 0) {
-      return { ...baseStyle, backgroundColor: 'rgb(200, 0, 0)' };
-    }
-
-    return { ...baseStyle, backgroundColor: 'rgb(220, 220, 0)' };
-  }
-
-  function getCategoryStatusString(categoryId: string) {
-    const racersInCat = raceInfoState.racerList.filter(
-      (racer) => racer.categoryId && racer.categoryId.includes(categoryId),
-    ).length;
-
-    const racersCheckedIn = raceInfoState.racerList.filter(
-      (racer) =>
-        racer.categoryId &&
-        racer.categoryId.includes(categoryId) &&
-        racer.checkedIn,
-    ).length;
-
-    if (racersInCat === 0) {
-      return 'N/A';
-    }
-
-    return `${racersCheckedIn}/${racersInCat} (${
-      racersInCat - racersCheckedIn
-    })`;
-  }
-
-  // TODO: emergency contact info getter?
   return (
     <div>
-      {raceInfoState.categoryList.length !== 0 && (
+      {categoryList.length !== 0 && (
         <List>
-          <Accordion disableGutters square>
+          <Accordion
+            key={raceId}
+            disableGutters
+            square
+            slotProps={{ transition: { unmountOnExit: true } }}
+          >
             <AccordionSummary expandIcon={<ExpandMoreSharp />}>
-              <Box style={getCategoryStatus('')} />
-              <Typography>
-                {
-                  listState.raceList
-                    .filter((race) => race.id === listState.selectedRace)
-                    .at(0)?.name
-                }
-              </Typography>
+              <Box
+                style={getCategoryStatus(
+                  raceInfo.totalRacers,
+                  raceInfo.racersOnCourse,
+                )}
+              />
+              <Typography>{raceInfo.name}</Typography>
               <Chip
                 variant="outlined"
-                label={getCategoryStatusString('')}
+                label={getCategoryStatusString(
+                  raceInfo.totalRacers,
+                  raceInfo.racersOnCourse,
+                )}
                 style={{
                   height: '25px',
                   marginLeft: '10px',
@@ -107,49 +110,23 @@ function RaceStatus({
               />
             </AccordionSummary>
             <AccordionDetails>
-              <CategoryDetail
-                racerList={raceInfoState.racerList}
-                columnDefinition={RaceStatusColumns}
+              <DataGrid
+                density="compact"
+                disableRowSelectionOnClick
+                autoHeight
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 15 } },
+                }}
+                pageSizeOptions={[15, 25, 50]}
+                rows={racerList}
+                columns={RaceStatusColumns}
               />
             </AccordionDetails>
           </Accordion>
           <Divider />
-          {raceInfoState.categoryList.map(({ id, name }) => (
-            <div key={id}>
-              <Accordion
-                disableGutters
-                square
-                slotProps={{ transition: { unmountOnExit: true } }}
-                disabled={
-                  raceInfoState.racerList.filter(
-                    (racer) => racer.categoryId === id,
-                  ).length === 0
-                }
-              >
-                <AccordionSummary expandIcon={<ExpandMoreSharp />}>
-                  <Box style={getCategoryStatus(id)} />
-                  <Typography>{name}</Typography>
-                  <Chip
-                    variant="outlined"
-                    label={getCategoryStatusString(id)}
-                    style={{
-                      height: '25px',
-                      marginLeft: '10px',
-                    }}
-                  />
-                </AccordionSummary>
-                <AccordionDetails>
-                  {/* TODO: API call to endpoint instead of passing filtered racerList */}
-                  <CategoryDetail
-                    racerList={raceInfoState.racerList.filter(
-                      (racer) =>
-                        racer.categoryId && racer.categoryId.includes(id),
-                    )}
-                    columnDefinition={CategoryStatusColumns}
-                  />
-                </AccordionDetails>
-              </Accordion>
-              <Divider />
+          {categoryList.map((category) => (
+            <div key={category.id}>
+              <CategoryStatus raceId={raceId} category={category} />
             </div>
           ))}
         </List>

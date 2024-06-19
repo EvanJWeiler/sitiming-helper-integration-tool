@@ -1,0 +1,3 @@
+const DNF_TIMER_VALUE = 999999999;
+
+export default DNF_TIMER_VALUE;

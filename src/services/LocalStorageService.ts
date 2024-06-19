@@ -1,24 +1,4 @@
-import { Racer } from 'interfaces/Database';
-import { ListState, RaceInfoState, ResultState } from 'interfaces/State';
-
-export const getRaceInfoStateFromStorage = (): RaceInfoState => {
-  let raceInfoStateString = window.sessionStorage.getItem(
-    'raceInfoState',
-  ) as string;
-
-  if (!raceInfoStateString) {
-    raceInfoStateString = JSON.stringify({
-      categoryList: [],
-      racerMap: new Map<string, Racer[]>(),
-    });
-  }
-
-  return JSON.parse(raceInfoStateString);
-};
-
-export const setRaceInfoStateInStorage = (raceInfoState: RaceInfoState) => {
-  window.sessionStorage.setItem('raceInfoState', JSON.stringify(raceInfoState));
-};
+import { ListState } from 'interfaces/State';
 
 export const getListStateFromStorage = (): ListState => {
   let listStateString = window.sessionStorage.getItem('listState') as string;
@@ -37,20 +17,16 @@ export const setListStateInStorage = (listState: ListState) => {
   window.sessionStorage.setItem('listState', JSON.stringify(listState));
 };
 
-export const getResultStateFromStorage = (): ResultState => {
-  let resultStateString = window.sessionStorage.getItem(
-    'resultState',
-  ) as string;
+export const getTabStateFromStorage = (): string => {
+  let tabState = window.sessionStorage.getItem('tabState') as string;
 
-  if (!resultStateString) {
-    resultStateString = JSON.stringify({
-      results: {},
-    });
+  if (!tabState) {
+    tabState = 'status';
   }
 
-  return JSON.parse(resultStateString);
+  return tabState;
 };
 
-export const setResultStateInStorage = (resultState: ResultState) => {
-  window.sessionStorage.setItem('resultState', JSON.stringify(resultState));
+export const setTabStateInStorage = (tabState: string) => {
+  window.sessionStorage.setItem('tabState', tabState);
 };

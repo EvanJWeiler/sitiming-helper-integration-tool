@@ -1,4 +1,4 @@
-import { Race, Racer, Category } from './Database';
+import { Race, RacerStatus, CategoryWithStatus } from './Database';
 import { Results, ServerSettings } from './Schema';
 
 export interface SettingsState {
@@ -6,9 +6,15 @@ export interface SettingsState {
   isSubmitting: boolean;
 }
 
+export interface SnackbarState {
+  isOpen: boolean;
+  severity: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+}
+
 export interface RaceInfoState {
-  categoryList: Category[];
-  racerList: Racer[];
+  categoryList: CategoryWithStatus[];
+  racerList: RacerStatus[];
 }
 
 export interface ListState {

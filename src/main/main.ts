@@ -12,6 +12,7 @@ import path from 'path';
 import { app, BrowserWindow, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import { ChildProcessWithoutNullStreams } from 'child_process';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
@@ -24,6 +25,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let child: ChildProcessWithoutNullStreams;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -36,6 +38,31 @@ const isDebug =
 if (isDebug) {
   require('electron-debug')();
 }
+
+const startServer = async () => {
+  const server = `${path.join(
+    process.resourcesPath,
+    'backend/stoke_backend.jar',
+  )}`;
+  const appProps = `${path.join(
+    process.resourcesPath,
+    'backend/application.properties',
+  )}`;
+
+  log.info(`Launching server with jar=${server}, properties=${appProps}...`);
+
+  child = require('child_process').spawn('java', [
+    '-jar',
+    server,
+    `--spring.config.location=${appProps}`,
+  ]);
+
+  if (child.pid) {
+    log.info(`Server PID: ${child.pid}`);
+  } else {
+    log.error('Failed to launch server process.');
+  }
+};
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -113,6 +140,10 @@ const createWindow = async () => {
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
+  if (child) {
+    const kill = require('tree-kill');
+    kill(child.pid);
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -121,6 +152,9 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
+    if (!isDebug) {
+      startServer();
+    }
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the

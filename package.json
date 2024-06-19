@@ -102,12 +102,15 @@
     "@mui/lab": "^5.0.0-alpha.166",
     "@mui/material": "^5.15.11",
     "@mui/x-data-grid": "^6.19.5",
+    "axios": "^1.6.8",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^6.1.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.16.0"
+    "react-router-dom": "^6.16.0",
+    "tree-kill": "^1.2.2",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@electron/notarize": "^2.1.0",
@@ -123,6 +126,7 @@
     "@types/react-dom": "^18.2.7",
     "@types/react-test-renderer": "^18.0.1",
     "@types/terser-webpack-plugin": "^5.0.4",
+    "@types/uuid": "^9.0.8",
     "@types/webpack-bundle-analyzer": "^4.6.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
@@ -177,7 +181,7 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "SiTiming Helper & Integration Tool",
+    "productName": "SiTiming Operations Konsole for Enduro",
     "appId": "com.evanweiler.sitiming",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
@@ -232,7 +236,9 @@
       "output": "release/build"
     },
     "extraResources": [
-      "./assets/**"
+      "./assets/**",
+      "./backend/stoke_backend.jar",
+      "./backend/application.properties"
     ],
     "publish": {
       "provider": "github",
